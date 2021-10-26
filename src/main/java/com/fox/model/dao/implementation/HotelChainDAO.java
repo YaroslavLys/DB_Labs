@@ -1,40 +1,28 @@
 package com.fox.model.dao.implementation;
 
+import com.fox.HibernateUtil;
 import com.fox.model.dao.AbstractDAO;
 import com.fox.model.entity.HotelChain;
-import com.fox.persistant.ConnectionManager;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings({"unchecked"})
 public class HotelChainDAO implements AbstractDAO<HotelChain> {
 
-    private static final String GET_ALL = "SELECT * FROM lys_db.hotel_chain";
-    private static final String GET_BY_ID = "SELECT * FROM lys_db.hotel_chain WHERE id=?";
-    private static final String CREATE = "INSERT lys_db.hotel_chain "
-            + "(`name`, `type`, `parent_company`) VALUES (?, ?, ?)";
-    private static final String UPDATE = "UPDATE lys_db.hotel_chain"
-            + " SET name=?, type=?, parent_company=? WHERE id=?";
-    private static final String DELETE = "DELETE FROM lys_db.hotel_chain WHERE id=?";
+    protected final SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
 
     @Override
     public List<HotelChain> findAll() throws SQLException {
         List<HotelChain> hotelChains = new ArrayList<>();
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(GET_ALL)) {
-            System.out.println(statement);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                HotelChain hotelChain = new HotelChain(
-                        resultSet.getInt("id"),
-                        resultSet.getString("name"),
-                        resultSet.getString("type"),
-                        resultSet.getString("parent_company")
-                );
-                hotelChains.add(hotelChain);
-            }
+
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            hotelChains = session.createQuery("from HotelChain ").getResultList();
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -44,18 +32,11 @@ public class HotelChainDAO implements AbstractDAO<HotelChain> {
     @Override
     public HotelChain findById(Integer id) throws SQLException {
         HotelChain hotelChain = null;
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(GET_BY_ID)) {
-            statement.setInt(1, id);
-            System.out.println(statement);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                hotelChain = new HotelChain(
-                        resultSet.getInt("id"),
-                        resultSet.getString("name"),
-                        resultSet.getString("type"),
-                        resultSet.getString("parent_company")
-                );
-            }
+
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            hotelChain = session.get(HotelChain.class, id);
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -63,28 +44,22 @@ public class HotelChainDAO implements AbstractDAO<HotelChain> {
     }
 
     @Override
-    public void create(HotelChain hotelChain) throws SQLException {
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(CREATE)) {
-            statement.setString(1, String.valueOf(hotelChain.getName()));
-            statement.setString(2, String.valueOf(hotelChain.getType()));
-            statement.setString(3, String.valueOf(hotelChain.getParentCompany()));
-            statement.executeUpdate();
-            System.out.println(statement);
+    public void create(HotelChain entity) throws SQLException {
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            session.save(entity);
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
-    public void update(Integer id, HotelChain hotelChain) throws SQLException {
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(UPDATE)) {
-            statement.setString(1, hotelChain.getName());
-            statement.setString(2, hotelChain.getType());
-            statement.setString(3, hotelChain.getParentCompany());
-            statement.setInt(4, hotelChain.getId());
-            statement.executeUpdate();
-            System.out.println(statement);
+    public void update(Integer id, HotelChain entity) throws SQLException {
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            session.update(entity);
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -92,10 +67,13 @@ public class HotelChainDAO implements AbstractDAO<HotelChain> {
 
     @Override
     public void delete(Integer id) throws SQLException {
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(DELETE)) {
-            statement.setInt(1, id);
-            System.out.println(statement);
-            statement.executeUpdate();
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            HotelChain hotelChain = session.get(HotelChain.class, id);
+            if (hotelChain != null) {
+                session.delete(hotelChain);
+            }
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }

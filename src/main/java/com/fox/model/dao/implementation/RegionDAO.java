@@ -1,39 +1,29 @@
 package com.fox.model.dao.implementation;
 
+import com.fox.HibernateUtil;
 import com.fox.model.dao.AbstractDAO;
-import com.fox.model.entity.Region;
-import com.fox.persistant.ConnectionManager;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import com.fox.model.entity.Region;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings({"unchecked"})
 public class RegionDAO implements AbstractDAO<Region> {
-    private static final String GET_ALL = "SELECT * FROM lys_db.region";
-    private static final String GET_BY_NAME = "SELECT * FROM lys_db.region WHERE name=?";
-    private static final String CREATE = "INSERT lys_db.region "
-            + "(`name`, `country_name`, `climate`) VALUES (?, ?, ?)";
-    private static final String UPDATE = "UPDATE lys_db.region"
-            + " SET climate=? WHERE name=? AND country_name=?";
-    private static final String DELETE = "DELETE FROM lys_db.region WHERE name=?";
 
+    protected final SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
 
     @Override
     public List<Region> findAll() throws SQLException {
         List<Region> regions = new ArrayList<>();
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(GET_ALL)) {
-            System.out.println(statement);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                Region region = new Region(
-                        resultSet.getString("name"),
-                        resultSet.getString("country_name"),
-                        resultSet.getString("climate")
-                );
-                regions.add(region);
-            }
+
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            regions = session.createQuery("from Region ").getResultList();
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -41,13 +31,11 @@ public class RegionDAO implements AbstractDAO<Region> {
     }
 
     @Override
-    public void create(Region region) throws SQLException {
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(CREATE)) {
-            statement.setString(1, String.valueOf(region.getName()));
-            statement.setString(2, String.valueOf(region.getCountryName()));
-            statement.setString(3, String.valueOf(region.getClimate()));
-            statement.executeUpdate();
-            System.out.println(statement);
+    public void create(Region entity) throws SQLException {
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            session.save(entity.getName(), entity);
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -56,17 +44,11 @@ public class RegionDAO implements AbstractDAO<Region> {
     @Override
     public Region findByName(String name) throws SQLException {
         Region region = null;
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(GET_BY_NAME)) {
-            statement.setString(1, name);
-            System.out.println(statement);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                region = new Region(
-                        resultSet.getString("name"),
-                        resultSet.getString("country_name"),
-                        resultSet.getString("climate")
-                );
-            }
+
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            region = session.get(Region.class, name);
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -74,13 +56,11 @@ public class RegionDAO implements AbstractDAO<Region> {
     }
 
     @Override
-    public void update(String name, Region region) throws SQLException {
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(UPDATE)) {
-            statement.setString(1, region.getClimate());
-            statement.setString(2, region.getName());
-            statement.setString(3, region.getCountryName());
-            statement.executeUpdate();
-            System.out.println(statement);
+    public void update(String name, Region entity) throws SQLException {
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            session.update(entity);
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -88,10 +68,13 @@ public class RegionDAO implements AbstractDAO<Region> {
 
     @Override
     public void delete(String name) throws SQLException {
-        try (PreparedStatement statement = ConnectionManager.getConnection().prepareStatement(DELETE)) {
-            statement.setString(1, name);
-            System.out.println(statement);
-            statement.executeUpdate();
+        try (Session session = sessionFactory.getCurrentSession()) {
+            session.beginTransaction();
+            Region region = session.get(Region.class, name);
+            if (region != null) {
+                session.delete(region);
+            }
+            session.getTransaction().commit();
         } catch (Exception e) {
             e.printStackTrace();
         }

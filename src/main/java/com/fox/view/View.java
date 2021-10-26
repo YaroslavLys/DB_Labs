@@ -3,6 +3,7 @@ package com.fox.view;
 import com.fox.controller.implementation.*;
 import com.fox.model.entity.*;
 
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.LinkedHashMap;
@@ -504,7 +505,7 @@ public class View {
         System.out.println("Enter name: ");
         String name = SCANNER.next();
         System.out.println("Enter price: ");
-        Integer price = SCANNER.nextInt();
+        BigInteger price = SCANNER.nextBigInteger();
         return new Amenity(roomId, name, price);
     }
 
@@ -555,7 +556,7 @@ public class View {
         String secondTime = "2020-12-12 01:24:23";
         Timestamp endTime = Timestamp.valueOf(secondTime);
         System.out.println("Enter payment amount: ");
-        Integer paymentAmount = SCANNER.nextInt();
+        BigInteger paymentAmount = SCANNER.nextBigInteger();
         System.out.println("Enter adults: ");
         Integer adults = SCANNER.nextInt();
         System.out.println("Enter kids: ");
